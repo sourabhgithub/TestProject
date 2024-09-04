@@ -12,17 +12,14 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Filter valid Manifest IDs from the input using regex
-filtered_manifest_ids=$(echo "$MANIFEST_ID" | grep -oE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
-
-if [ -z "$filtered_manifest_ids" ]; then
+if [ -z "$MANIFEST_ID" ]; then
   echo "No bad data found in batch_post_log, job can run."
 else
   found_manifest_id=false
   items_after_manifest_id=()
 
   echo "Already active manifest IDs:"
-  for item in $filtered_manifest_ids; do
+  for item in $MANIFEST_ID; do
     if [ "$found_manifest_id" = false ]; then
       if [ "$item" == 'MANIFEST_ID' ]; then
         found_manifest_id=true;
@@ -37,11 +34,16 @@ else
   else
     echo "Items after MANIFEST_ID:"
     for item in "${items_after_manifest_id[@]}"; do
-      echo "Found manifestId '$item' in batch_post_log for payload_id in ('$item') that does not have cash data."
-      echo "CASH L3, please run this on batch database for the job to be able to run:"
-      echo "delete from cash_owner.merch_dtb_pst where manifest_id='$item';"
-      echo "delete from cash_owner.batch_post_log where manifest_id='$item';"
-      echo "this bad data must be cleaned up before the job can run successfully"
+      # Check if the item contains only letters, digits, and hyphens
+      if [[ "$item" =~ ^[a-zA-Z0-9-]+$ ]]; then
+        echo "Found manifestId '$item' in batch_post_log for payload_id in ('$item') that does not have cash data."
+        echo "CASH L3, please run this on batch database for the job to be able to run:"
+        echo "delete from cash_owner.merch_dtb_pst where manifest_id='$item';"
+        echo "delete from cash_owner.batch_post_log where manifest_id='$item';"
+        echo "this bad data must be cleaned up before the job can run successfully"
+      else
+        echo "Invalid manifest ID found: '$item'. Skipping."
+      fi
     done
   fi
 
