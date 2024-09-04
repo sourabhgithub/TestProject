@@ -1,4 +1,4 @@
-# Run the SQL query
+]# Run the SQL query
 echo "running SQL: ${SQL}"
 MANIFEST_ID=$(sh dbaccess_readonly.sh -autosys <<EOF
 select bpl.manifest_id from cash_owner.batch_post_log bpl left join cash_owner.csh_...
@@ -22,7 +22,7 @@ else
   for item in $MANIFEST_ID; do
     if [ "$found_manifest_id" = false ]; then
       if [ "$item" == 'MANIFEST_ID' ]; then
-        found_manifest_id=true;
+        found_manifest_id=true
       fi
     else
       items_after_manifest_id+=("$item")
