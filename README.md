@@ -1,106 +1,61 @@
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+package com.example.security;
 
-import java.io.IOException;
-import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 
-@Component
-public class IpRestrictionFilter extends OncePerRequestFilter {
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-    // List of allowed IP addresses
-    private static final List<String> ALLOWED_IPS = List.of(
-        "192.168.1.10",  // Example IP address 1
-        "192.168.1.20"   // Example IP address 2
-    );
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("dev") // Set the profile for the environment you want to test
+public class IpAddressFilterDevTest {
 
-    private final RequestMatcher protectedUrlPattern;
+    @Autowired
+    private MockMvc mockMvc;
 
-    public IpRestrictionFilter(RequestMatcher protectedUrlPattern) {
-        this.protectedUrlPattern = protectedUrlPattern;
+    @Test
+    public void shouldAllowRequestFromAllowedIpInDev() throws Exception {
+        // Simulate request from an allowed IP address in the Dev environment
+        mockMvc.perform(get("/cash/settle/test")
+                        .header("X-Forwarded-For", "192.168.1.10")) // Allowed IP in Dev
+                .andExpect(status().isOk()); // Expect OK status
     }
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        
-        // Check if the request URL matches the protected pattern
-        if (protectedUrlPattern.matches(request)) {
-            String remoteAddr = request.getRemoteAddr();
-
-            // Allow or block request based on IP
-            if (ALLOWED_IPS.contains(remoteAddr)) {
-                filterChain.doFilter(request, response);  // Allow the request
-            } else {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");  // Block the request
-                return;
-            }
-        } else {
-            filterChain.doFilter(request, response);  // Continue the request processing if URL is not protected
-        }
+    @Test
+    public void shouldRejectRequestFromDisallowedIpInDev() throws Exception {
+        // Simulate request from a disallowed IP address
+        mockMvc.perform(get("/cash/settle/test")
+                        .header("X-Forwarded-For", "203.0.113.10")) // Disallowed IP
+                .andExpect(status().isForbidden()); // Expect 403 Forbidden status
     }
 }
 
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("prod") // Set the profile for the environment you want to test
+public class IpAddressFilterProdTest {
 
-2. Configure Spring Security to Use the Filter
-Create a Spring Security configuration class to register the custom filter. You can configure the filter to be applied only to specific URLs related to your Kafka producer.
+    @Autowired
+    private MockMvc mockMvc;
 
-java
-Copy code
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    @Bean
-    public IpRestrictionFilter ipRestrictionFilter() {
-        return new IpRestrictionFilter(new AntPathRequestMatcher("/kafka/**")); // Apply to /kafka/ URLs
+    @Test
+    public void shouldAllowRequestFromAllowedIpInProd() throws Exception {
+        // Simulate request from an allowed IP address in the Prod environment
+        mockMvc.perform(get("/cash/settle/test")
+                        .header("X-Forwarded-For", "10.0.1.10")) // Allowed IP in Prod
+                .andExpect(status().isOk()); // Expect OK status
     }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-            .addFilterBefore(ipRestrictionFilter(), IpRestrictionFilter.class)  // Add our custom IP filter
-            .authorizeRequests()
-                .antMatchers("/kafka/**").authenticated()  // Protect /kafka/ endpoints
-                .anyRequest().permitAll();  // Allow other requests
+    @Test
+    public void shouldRejectRequestFromDisallowedIpInProd() throws Exception {
+        // Simulate request from a disallowed IP address
+        mockMvc.perform(get("/cash/settle/test")
+                        .header("X-Forwarded-For", "203.0.113.10")) // Disallowed IP
+                .andExpect(status().isForbidden()); // Expect 403 Forbidden status
     }
 }
-Explanation
-IpRestrictionFilter Class:
-
-The filter checks incoming requests' IP addresses. If the IP is not in the ALLOWED_IPS list, it returns a 403 Forbidden response.
-protectedUrlPattern:
-
-This defines which URLs are protected by the IP restriction. For example, all URLs starting with /kafka/ are protected.
-Spring Security Configuration (SecurityConfig):
-
-Registers the custom filter IpRestrictionFilter and applies it to URLs matching /kafka/**.
-Ensures that only requests from allowed IP addresses can access the Kafka producer endpoints.
-Notes
-Customize Allowed IPs: Modify the ALLOWED_IPS list to match the specific IPs you want to allow.
-Enhance Security: Combine IP filtering with other security mechanisms such as mTLS (Mutual TLS), authentication, and authorization for better security.
-Testing: Ensure to test the filter with different IP addresses to verify that it blocks or allows requests as expected.
-By following these steps, you can implement an IP-based restriction filter for your Kafka producer endpoints in a Spring Boot application.
-
-
-
-
-
-
-
-
-
-
-
-
