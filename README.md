@@ -1,85 +1,65 @@
-public void automationUpdateLeadRequest(RequestDto requestDto) {
-    try {
-        String requestId = requestDto.getId().toString();
-        log.info("automationUpdateLeadRequest() - submitting initial screen test for request ({})", requestDto.getId());
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.job.flow.JobExecutionDecider;
+import org.springframework.batch.core.listener.JobExecutionListenerSupport;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.Job;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Autowired;
 
-        boolean releasedFlag = initialRequest(requestId, requestDto);
+@Configuration
+@EnableBatchProcessing
+public class BatchConfig {
 
-        if (releasedFlag) {
-            updateRequest(requestDto.getId(), SUBMITTED);
-            return;
-        }
+    @Autowired
+    private JobBuilderFactory jobBuilderFactory;
 
-        List<RequestUpdateDto> requestUpdates = requestDto.getUpdates();
-        String latestRequestStatus = CollectionUtils.isEmpty(requestUpdates) ? null : requestUpdates.get(0).getStatus();
-        String status = checkOrderStatus(requestId);
+    @Autowired
+    private StepBuilderFactory stepBuilderFactory;
 
-        // Track the start time when the lead enters Lead Screening
-        long leadScreeningStartTime = System.currentTimeMillis();
+    @Autowired
+    private LoadReferenceDataTasklet loadReferenceDataTasklet;
 
-        // Retry until checkOrderStatus is in either closed status list or released status list.
-        while (!closedStatus.contains(status) && !releasedStatus.contains(status)) {
-            log.info("automationUpdateLeadRequest() - checking for status update on request ({})", requestDto.getId());
+    @Autowired
+    private ProcessReconExceptionsTasklet processReconExceptionsTasklet;
 
-            if (onHoldStatus.contains(status) || errorStatus.contains(status) || status == null) {
-                if (!LEAD_SCREENING.equals(latestRequestStatus) && onHoldStatus.contains(status)) {
-                    updateRequest(requestDto.getId(), LEAD_SCREENING, status);
-                }
+    @Autowired
+    private CreateReconExceptionsTasklet createReconExceptionsTasklet;
 
-                // Check if lead has been in Lead Screening for 10 minutes
-                if (LEAD_SCREENING.equals(latestRequestStatus)) {
-                    long currentTime = System.currentTimeMillis();
-                    long timeInLeadScreening = (currentTime - leadScreeningStartTime) / 60000; // in minutes
-                    if (timeInLeadScreening >= 10) {
-                        log.info("Lead has been in Lead Screening for more than 10 minutes, releasing it automatically.");
-                        updateRequest(requestDto.getId(), SUBMITTED);
-                        return;
-                    }
-                }
+    @Autowired
+    private PromotionListener promotionListener;
 
-                Thread.sleep(300000L); // Sleep for 5 minutes
-                requestDto = RequestRestClient.getRequestById(getIntraServiceToken(), Long.valueOf(requestId));
+    @Bean
+    public Job cashExceptionsProcessJob() {
+        return jobBuilderFactory.get("cashExceptionsProcessJob")
+                .start(loadRefDataStep())
+                .next(dtbReconExceptionsStep())
+                .build();
+    }
 
-                if (requestDto == null || !LEAD_SCREENING.equalsIgnoreCase(requestDto.getStatus())) {
-                    return;
-                }
+    @Bean
+    public Step loadRefDataStep() {
+        return stepBuilderFactory.get("loadRefDataStep")
+                .tasklet(loadReferenceDataTasklet)
+                .listener(promotionListener)
+                .build();
+    }
 
-                status = checkOrderStatus(requestId);
-            }
+    @Bean
+    public Step dtbReconExceptionsStep() {
+        return stepBuilderFactory.get("dtbReconExceptionsStep")
+                .tasklet(processReconExceptionsTasklet)
+                .build();
+    }
 
-            if (serviceDownStatus.contains(status)) {
-                Thread.sleep(3600000L); // Sleep for 1 hour
-                requestDto = RequestRestClient.getRequestById(getIntraServiceToken(), Long.valueOf(requestId));
-
-                if (requestDto == null || !LEAD_SCREENING.equalsIgnoreCase(requestDto.getStatus())) {
-                    return;
-                }
-
-                boolean flag = initialRequest(requestId, requestDto);
-                if (flag) {
-                    updateRequest(requestDto.getId(), SUBMITTED);
-                    return;
-                }
-
-                status = checkOrderStatus(requestId);
-            }
-
-            latestRequestStatus = CollectionUtils.isEmpty(requestDto.getUpdates()) ? null : requestDto.getUpdates().get(0).getStatus();
-        }
-
-        if (closedStatus.contains(status)) {
-            updateRequest(requestDto.getId(), CLOSED);
-        }
-
-        if (releasedStatus.contains(status)) {
-            updateRequest(requestDto.getId(), SUBMITTED);
-        }
-    } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("automationUpdateLeadRequest thread sleep exception " + e.getMessage());
-        errorReportForException(e, "services");
-    } catch (Exception e) {
-        log.error("automationUpdateLeadRequest{}: Exiting due to Exception: " + e.getMessage());
-        errorReportForException(e, "services");
+    @Bean
+    public Step createReconExceptionsStep() {
+        return stepBuilderFactory.get("createReconExceptionsStep")
+                .tasklet(createReconExceptionsTasklet)
+                .build();
     }
 }
