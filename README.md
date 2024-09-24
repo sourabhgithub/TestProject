@@ -1,65 +1,20 @@
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.job.flow.JobExecutionDecider;
-import org.springframework.batch.core.listener.JobExecutionListenerSupport;
-import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.core.Step;
-import org.springframework.batch.core.Job;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.annotation.Autowired;
+Sure! Here’s a version with smaller paragraphs, written in simpler language suitable for a 6th grader:
 
-@Configuration
-@EnableBatchProcessing
-public class BatchConfig {
 
-    @Autowired
-    private JobBuilderFactory jobBuilderFactory;
+---
 
-    @Autowired
-    private StepBuilderFactory stepBuilderFactory;
+Grace gasped and pointed at the water. “Look, it’s an alligator!” she shouted, pulling Amy close. Both girls stared, afraid of the dark shape floating near their boat.
 
-    @Autowired
-    private LoadReferenceDataTasklet loadReferenceDataTasklet;
+Betty, who was steering the boat, glanced over and smiled. “Let’s get closer and see what it really is,” she said calmly. She slowly guided the boat toward the shape in the water.
 
-    @Autowired
-    private ProcessReconExceptionsTasklet processReconExceptionsTasklet;
+When they got closer, Betty started laughing. “That’s not an alligator! It’s just a log!” she said. Grace and Amy looked again and saw that she was right. They both began to laugh.
 
-    @Autowired
-    private CreateReconExceptionsTasklet createReconExceptionsTasklet;
+“I can’t believe we were so scared!” Grace said, still giggling. “Me neither!” Amy agreed, feeling much better.
 
-    @Autowired
-    private PromotionListener promotionListener;
+Betty kept the boat moving down the river. “Next time, we should check before we panic,” she said. The girls laughed together, and the rest of their trip was fun and peaceful.
 
-    @Bean
-    public Job cashExceptionsProcessJob() {
-        return jobBuilderFactory.get("cashExceptionsProcessJob")
-                .start(loadRefDataStep())
-                .next(dtbReconExceptionsStep())
-                .build();
-    }
 
-    @Bean
-    public Step loadRefDataStep() {
-        return stepBuilderFactory.get("loadRefDataStep")
-                .tasklet(loadReferenceDataTasklet)
-                .listener(promotionListener)
-                .build();
-    }
+---
 
-    @Bean
-    public Step dtbReconExceptionsStep() {
-        return stepBuilderFactory.get("dtbReconExceptionsStep")
-                .tasklet(processReconExceptionsTasklet)
-                .build();
-    }
+This version breaks things down into small, clear paragraphs, making it easier to read. Let me know if this works better for you!
 
-    @Bean
-    public Step createReconExceptionsStep() {
-        return stepBuilderFactory.get("createReconExceptionsStep")
-                .tasklet(createReconExceptionsTasklet)
-                .build();
-    }
-}
