@@ -1,61 +1,50 @@
-When incorporating a story or task name (e.g., JIRA ticket ID) in your commit messages, it’s essential to maintain clarity while adhering to a consistent structure. Here’s a guideline for writing commit messages that include a story name or task ID:
+To set up version control (VCS) and clone a repository in IntelliJ IDEA, follow these steps:
 
-1. Format: [StoryID] Subject Line
-Always begin the commit message with the story ID (e.g., [PROJ-123]), followed by a clear and concise subject line.
-Example: [PROJ-123] Fix issue with user login redirection
-2. Use the Imperative Mood
-As with standard commit messages, use the imperative mood. This describes what the commit does rather than what it did.
-Example: [PROJ-456] Add validation for email input
-3. Keep the Subject Line Short (50 characters or less)
-The subject line should summarize the change in 50 characters or fewer.
-If more explanation is required, use the body of the commit message.
-4. Capitalize the First Letter of the Subject
-Start the subject with a capital letter for consistency.
-Example: [PROJ-789] Improve database query performance
-5. Avoid Period at the End of the Subject
-Do not add punctuation (e.g., a period) at the end of the subject line.
-Example: [PROJ-101] Update homepage layout
-6. Optional Body for More Detail (Separate by a Blank Line)
-If needed, add a more detailed explanation in the body of the commit message.
-Ensure each line in the body doesn’t exceed 72 characters.
-Example:
-csharp
-Copy code
-[PROJ-321] Refactor authentication flow for new users
+### Step 1: Open IntelliJ IDEA
 
-Refactored the user authentication process to improve security and 
-reduce the number of redundant database queries. This change also 
-addresses edge cases where session tokens were not properly invalidated.
+1. Launch IntelliJ IDEA.
 
-Fixes #567
-7. Reference Related Issues, Bugs, or Tickets in the Body
-If applicable, use keywords like Fixes, Closes, or Related to with the ticket number to auto-close or associate the issue.
-Example: Fixes #678 or Closes PROJ-678
-8. Be Consistent
-Keep the format consistent across all commits, so it's easier to trace changes and match commits to corresponding tasks or tickets.
-Example Structure
-Short Commit Message:
-bash
-Copy code
-[PROJ-123] Fix login issue for returning users
-Detailed Commit Message:
-css
-Copy code
-[PROJ-456] Refactor user authentication flow to improve performance
+### Step 2: Get from Version Control
 
-The authentication logic has been updated to reduce redundant database 
-queries. This change improves login performance by 20%, ensuring that 
-the user login experience is smoother. 
+1. **Select VCS Option**:
+   - On the welcome screen, click on **Get from VCS**.
+   - If you already have a project open, go to `File` > `New` > `Project from Version Control`.
 
-Fixes PROJ-456
-Best Practices:
-Use the ticket ID at the beginning: This helps team members easily find the relevant JIRA or tracking system ticket.
-Explain the why and how in the body: When necessary, use the body to provide additional context about why the change was made.
-Link to the story or issue: If your project management system automatically links issues and commits, this helps with traceability.
-By following this approach, your commit messages will be clear, concise, and traceable to specific stories or tasks in your tracking system.
+### Step 3: Clone the Repository
 
+1. **Enter Repository URL**:
+   - In the dialog that appears, enter the URL of the repository you want to clone. This can be an HTTPS or SSH URL.
 
+2. **Select Local Directory**:
+   - Choose a local directory where you want to clone the repository by clicking on the `Directory` field.
 
+3. **Authentication (if needed)**:
+   - If the repository is private, you may need to enter your username and password or use an SSH key.
 
+4. **Clone**:
+   - Click the **Clone** button. IntelliJ will start cloning the repository.
 
+### Step 4: Open the Project
 
+1. **Import Project**:
+   - Once cloning is complete, IntelliJ IDEA will usually open the project automatically. If it doesn’t, you may need to open the cloned directory manually by going to `File` > `Open...` and selecting the project directory.
+
+### Step 5: Configure the Project (if necessary)
+
+1. **Set Project SDK**:
+   - If prompted, set the project SDK by going to `File` > `Project Structure` (or press `Ctrl + Alt + Shift + S`) and selecting the appropriate SDK.
+
+2. **Maven/Gradle Setup (if applicable)**:
+   - If your project uses Maven or Gradle, IntelliJ will automatically detect it and set up the dependencies. You can view them in the Maven or Gradle tool window.
+
+### Step 6: Start Working
+
+1. **Build and Run**:
+   - You can now build the project using the `Build` menu and run it using the run configurations in the top right corner.
+
+### Additional Tips
+
+- **VCS Integration**: IntelliJ IDEA has excellent support for VCS like Git, Mercurial, etc. You can commit changes, push, pull, and manage branches directly within the IDE.
+- **Check VCS Settings**: You can configure VCS settings by going to `File` > `Settings` > `Version Control`.
+
+That’s it! You should now have the repository cloned and set up in IntelliJ IDEA. If you encounter any issues, feel free to ask!
