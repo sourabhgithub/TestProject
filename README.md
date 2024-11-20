@@ -1,50 +1,57 @@
-import java.lang.annotation.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Documented
-@Target({ElementType.FIELD, ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface SanitizeInput {
-    String message() default "Sanitizing input for security purposes.";
-}
+public class SanitizationProcessorTest {
 
+    @Test
+    void testSanitization_removesDangerousHtml() {
+        // Arrange
+        SafePojo pojo = new SafePojo();
+        pojo.setSafeField("Hello<script>alert('XSS');</script>World!");
 
-public class InputSanitizer {
+        // Act
+        SanitizationProcessor.sanitize(pojo);
 
-    // Example: Basic sanitization by removing dangerous characters or patterns
-    public static String sanitize(String input) {
-        if (input == null) {
-            return null;
-        }
-        // Remove potentially dangerous characters or tags
-        return input.replaceAll("<.*?>", "") // Removes HTML tags
-                    .replaceAll("[^a-zA-Z0-9 _-]", ""); // Removes non-allowed characters
+        // Assert
+        assertEquals("HelloWorld", pojo.getSafeField(), "Sanitization should remove HTML tags and script content.");
     }
-}
 
-import java.lang.reflect.Field;
+    @Test
+    void testSanitization_allowsValidInput() {
+        // Arrange
+        SafePojo pojo = new SafePojo();
+        pojo.setSafeField("Hello_World-123");
 
-public class SanitizationProcessor {
+        // Act
+        SanitizationProcessor.sanitize(pojo);
 
-    public static void sanitize(Object object) {
-        if (object == null) {
-            return;
-        }
+        // Assert
+        assertEquals("Hello_World-123", pojo.getSafeField(), "Valid input should remain unchanged.");
+    }
 
-        Field[] fields = object.getClass().getDeclaredFields();
+    @Test
+    void testSanitization_handlesNullInput() {
+        // Arrange
+        SafePojo pojo = new SafePojo();
+        pojo.setSafeField(null);
 
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(SanitizeInput.class)) {
-                field.setAccessible(true); // Allow access to private fields
-                try {
-                    Object value = field.get(object);
-                    if (value instanceof String) {
-                        String sanitizedValue = InputSanitizer.sanitize((String) value);
-                        field.set(object, sanitizedValue);
-                    }
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        // Act
+        SanitizationProcessor.sanitize(pojo);
+
+        // Assert
+        assertNull(pojo.getSafeField(), "Sanitization should not throw errors or alter null values.");
+    }
+
+    @Test
+    void testSanitization_removesInvalidCharacters() {
+        // Arrange
+        SafePojo pojo = new SafePojo();
+        pojo.setSafeField("Hello@#$%^&*()<>World!");
+
+        // Act
+        SanitizationProcessor.sanitize(pojo);
+
+        // Assert
+        assertEquals("HelloWorld", pojo.getSafeField(), "Sanitization should remove disallowed special characters.");
     }
 }
